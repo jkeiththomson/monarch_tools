@@ -5,6 +5,8 @@ Fresh, PyCharm-friendly CLI toolbox with **four commands**:
 - `name <your_name>` — greets the provided name
 - `help` — lists command names and arguments
 
+Thats only three?
+
 ## Why this version?
 - Uses a **src/** layout to avoid import shadowing
 - Provides **module-mode** PyCharm Run/Debug configurations (more resilient)
