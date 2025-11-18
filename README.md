@@ -374,3 +374,77 @@ Repeat Steps 3–4 until `rules.review.csv` is empty or only contains merchants 
   ```
 
 This README describes the “current workflow as programmed” — extract activity, categorize with iterative rules, and review uncategorized merchants using the generated CSV.
+
+## 6. Merchant name cleanup in `categorize`
+
+When you run:
+
+```bash
+monarch-tools categorize data/categories.txt data/rules.json path/to/activity
+```
+
+the tool now includes an **interactive merchant cleanup step**:
+
+- For each *distinct* merchant name it encounters, it shows:
+  - The original name as it appears in the statement.
+  - Up to 9 cleaned‑up suggestions (e.g., without phone numbers, long ticket IDs, or store codes).
+- Press **1–9** to pick a suggestion, or just press **Enter** to keep the current value.
+- The chosen value becomes the **Payee** written to the `*.activity.monarch.csv` file.
+- The original raw text from the statement is preserved in the **Notes** column when it differs.
+
+This cleanup happens once per distinct merchant name per `categorize` run and is purely about
+making the Payee text nicer for import into Monarch. Categories and rules continue to work
+as described above.
+
+> If you re‑run `categorize` on the same activity file and make different cleanup choices,
+> the tool rewrites the `*.activity.monarch.csv`, so all rows for that merchant get the
+> updated Payee.
+
+### Category / group validation
+
+Whenever `categories.txt` is updated (by `categorize` or other commands), the tool now checks
+it against `groups.txt` in the same directory:
+
+- Every category in `categories.txt` must appear **exactly once** in `groups.txt`.
+- If a category is missing or appears in more than one group, a file named:
+
+```text
+data/groups_exceptions.txt
+```
+
+is written listing the problematic categories so you can correct `groups.txt`.
+
+If there are no problems, any existing `groups_exceptions.txt` file is removed.
+
+---
+
+## 7. Interactive `assign` command (category picker)
+
+In addition to `categorize`, there is now an `assign` command that lets you walk through
+merchants with no category in `rules.json` and assign categories interactively:
+
+```bash
+monarch-tools assign data/categories.txt data/rules.json
+```
+
+This command:
+
+1. Loads `categories.txt` and `rules.json`.
+2. Finds every merchant in `rules["exact"]` whose `category` is empty or `null`.
+3. For each merchant:
+   - Shows the merchant name.
+   - Opens an interactive category picker:
+
+     - Type letters to **filter** categories by substring.
+     - Use **↑/↓** to move through the filtered list.
+     - Press **Enter** to select a category.
+     - Press **q** or **Esc** to skip that merchant.
+
+4. When you pick a category:
+   - The category is assigned to that merchant in `rules.json`.
+   - If the category doesn’t yet exist in `categories.txt`, it is added.
+5. At the end, both `categories.txt` and `rules.json` are written back, and
+   `groups_exceptions.txt` is updated (or removed) as needed.
+
+You can run `assign` as many times as you like; it will only prompt for merchants that
+still lack a category.
