@@ -12,6 +12,8 @@ from .hello import cmd_hello
 from .name import cmd_name
 from .help import cmd_help
 from .activity import cmd_activity
+from .categorize import cmd_categorize
+
 
 
 
@@ -59,6 +61,36 @@ def build_parser():
         help="Print diagnostic info (counts and a few sample lines).",
     )
     p_activity.set_defaults(func=cmd_activity)
+
+
+
+    # --- categorize ---
+    p_categorize = sub.add_parser(
+        "categorize",
+        help="Interactively assign categories to activity rows",
+        description=(
+            "Walk an activity CSV file and interactively build/update rules.json, "
+            "categories.txt, and groups.txt."
+        ),
+    )
+    p_categorize.add_argument(
+        "categories_txt",
+        help="Path to categories.txt",
+    )
+    p_categorize.add_argument(
+        "groups_txt",
+        help="Path to groups.txt",
+    )
+    p_categorize.add_argument(
+        "rules_json",
+        help="Path to rules.json",
+    )
+    p_categorize.add_argument(
+        "activity_csv",
+        help="Path to <stem>.activity.csv produced by the 'activity' command.",
+    )
+    p_categorize.set_defaults(func=cmd_categorize)
+
 
 
     return parser
