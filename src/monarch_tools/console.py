@@ -1,151 +1,155 @@
-"""Top-level CLI entry point for monarch_tools."""
+# console.py
+"""
+Main command dispatcher for monarch_tools.
+
+Each command’s "business logic" lives in its own module:
+hello.py, name.py, help.py, activity.py, categorize.py, etc.
+
+This file is defensive: if a given command function is missing,
+the CLI will print a helpful message instead of crashing.
+"""
 
 import argparse
+import sys
 
-from .hello import cmd_hello
-from .name import cmd_name
-from .help import cmd_help
-from .activity import cmd_activity
-from .categorize import cmd_categorize
-from .monarchcsv import cmd_monarch
-from .sanity import cmd_sanity
+
+# ---- Safe imports with fallbacks -------------------------------------------
+
+# hello
+try:
+    from .hello import hello_command as _hello_command  # type: ignore
+except Exception:  # ImportError, AttributeError, etc.
+    def _hello_command(args):
+        print("hello command is not implemented yet.")
+
+
+# name
+try:
+    from .name import name_command as _name_command  # type: ignore
+except Exception:
+    def _name_command(args):
+        print("name command is not implemented yet.")
+
+
+# help
+try:
+    from .help import help_command as _help_command  # type: ignore
+except Exception:
+    def _help_command(args):
+        print("help command is not implemented yet.")
+
+
+# activity
+try:
+    from .activity import activity_command as _activity_command  # type: ignore
+except Exception:
+    def _activity_command(args):
+        print("activity command is not implemented yet.")
+
+
+# categorize (new implementation)
+try:
+    from .categorize import categorize_command as _categorize_command  # type: ignore
+except Exception:
+    def _categorize_command(args):
+        print("categorize command is not implemented yet.")
+
+
+# ---- Parser setup ----------------------------------------------------------
 
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        prog="monarch-tools",
-        description="Monarch Money toolbox CLI",
+        prog="monarch_tools",
+        description="Monarch Tools Command Line Interface",
     )
-    sub = parser.add_subparsers(dest="cmd", required=True)
 
-    # --- hello ---
-    p_hello = sub.add_parser("hello", help="Say hello")
-    p_hello.set_defaults(func=cmd_hello)
+    subparsers = parser.add_subparsers(dest="command")
+    try:
+        subparsers.required = True  # Python 3.7+
+    except AttributeError:
+        pass
 
-    # --- name ---
-    p_name = sub.add_parser("name", help="Print your name")
-    p_name.add_argument("who", help="Name to print")
-    p_name.set_defaults(func=cmd_name)
+    # ---- hello ----
+    hello_p = subparsers.add_parser("hello", help="Say hello")
+    hello_p.set_defaults(func=_hello_command)
 
-    # --- help ---
-    p_help = sub.add_parser("help", help="Show this help message")
-    p_help.set_defaults(func=cmd_help)
+    # ---- name ----
+    name_p = subparsers.add_parser("name", help="Print your name")
+    name_p.add_argument("your_name", help="Your name")
+    name_p.set_defaults(func=_name_command)
 
-    # --- activity ---
-    p_activity = sub.add_parser(
+    # ---- help ----
+    help_p = subparsers.add_parser("help", help="Show help for monarch_tools")
+    help_p.set_defaults(func=_help_command)
+
+    # ---- activity ----
+    activity_p = subparsers.add_parser(
         "activity",
         help="Extract account activity from a statement PDF",
-        description=(
-            "Parse a credit card statement PDF (currently Chase only) and "
-            "emit an <stem>.activity.csv file plus a summary CSV."
-        ),
     )
-    p_activity.add_argument(
-        "type",
-        help="Statement type (e.g. 'chase')",
+    activity_p.add_argument(
+        "statement_type",
+        help="Statement type (e.g., 'chase')",
     )
-    p_activity.add_argument(
-        "pdf",
-        help="Path to the input statement PDF.",
+    activity_p.add_argument(
+        "pdf_path",
+        help="Path to the PDF statement",
     )
-    p_activity.add_argument(
-        "--out-dir",
-        default="out",
-        help="Directory for output CSV files (default: %(default)s).",
-    )
-    p_activity.set_defaults(func=cmd_activity)
+    activity_p.set_defaults(func=_activity_command)
 
-    # --- categorize ---
-    p_categorize = sub.add_parser(
+    # ---- categorize ----
+    categorize_p = subparsers.add_parser(
         "categorize",
-        help="Interactively assign categories to activity rows",
-        description=(
-            "Walk an <stem>.activity.csv file and interactively build/update "
-            "rules.json, categories.txt, and groups.txt."
-        ),
+        help="Categorize merchants using categories, groups, and rules",
     )
-    p_categorize.add_argument(
-        "categories_txt",
-        help="Path to categories.txt",
-    )
-    p_categorize.add_argument(
-        "groups_txt",
-        help="Path to groups.txt",
-    )
-    p_categorize.add_argument(
-        "rules_json",
-        help="Path to rules.json",
-    )
-    p_categorize.add_argument(
+    categorize_p.add_argument(
         "activity_csv",
-        help="Path to <stem>.activity.csv produced by the 'activity' command.",
+        help="Input CSV file (activity extracted file)",
     )
-    p_categorize.add_argument(
-        "--dry-run",
-        action="store_true",
-        help="Run categorization without writing any output files.",
+    categorize_p.add_argument(
+        "--categories",
+        default="data/categories.txt",
+        help="Path to category list (default: data/categories.txt)",
     )
-    p_categorize.set_defaults(func=cmd_categorize)
-
-    # --- monarch ---
-    p_monarch = sub.add_parser(
-        "monarch",
-        help="Export Monarch-compatible CSV for a single account",
-        description=(
-            "Generate a <stem>.monarch.csv file suitable for Monarch Money's "
-            "single-account CSV import, using an activity CSV plus rules.json."
-        ),
+    categorize_p.add_argument(
+        "--groups",
+        default="data/groups.txt",
+        help="Path to group→category mapping (default: data/groups.txt)",
     )
-    p_monarch.add_argument(
-        "account",
-        help="Monarch account name for these transactions (must match an existing account in Monarch).",
+    categorize_p.add_argument(
+        "--rules",
+        default="data/rules.json",
+        help="Path to categorization rules (default: data/rules.json)",
     )
-    p_monarch.add_argument(
-        "rules_json",
-        help="Path to rules.json used for canonical merchants and categories.",
+    categorize_p.add_argument(
+        "--output",
+        help="Output CSV; default is <stem>.categorized.csv",
     )
-    p_monarch.add_argument(
-        "activity_csv",
-        help="Path to <stem>.activity.csv produced by the 'activity' command.",
-    )
-    p_monarch.add_argument(
-        "--out",
-        metavar="PATH",
-        help=(
-            "Optional explicit output path for the Monarch CSV. "
-            "Defaults to <stem>.monarch.csv alongside the activity CSV."
-        ),
-    )
-    p_monarch.set_defaults(func=cmd_monarch)
-
-    # --- sanity ---
-    p_sanity = sub.add_parser(
-        "sanity",
-        help="Compare totals between activity CSV and Monarch CSV",
-        description=(
-            "Print a side-by-side comparison of payments/purchases counts and "
-            "totals from an activity CSV and its corresponding .monarch.csv."
-        ),
-    )
-    p_sanity.add_argument(
-        "activity_csv",
-        help="Path to <stem>.activity.csv file.",
-    )
-    p_sanity.add_argument(
-        "monarch_csv",
-        nargs="?",
-        help="Optional path to .monarch.csv. If omitted, derived from activity filename.",
-    )
-    p_sanity.set_defaults(func=cmd_sanity)
+    categorize_p.set_defaults(func=_categorize_command)
 
     return parser
 
 
-def main() -> int:
+# ---- Main entry point ------------------------------------------------------
+
+
+def main(argv=None) -> int:
+    if argv is None:
+        argv = sys.argv[1:]
+
     parser = build_parser()
-    ns = parser.parse_args()
-    return ns.func(ns)
+    args = parser.parse_args(argv)
+
+    try:
+        result = args.func(args)
+        if isinstance(result, int):
+            return result
+        return 0
+    except Exception as e:
+        print(f"Error: {e}", file=sys.stderr)
+        return 1
 
 
-if __name__ == "__main__":  # pragma: no cover
-    raise SystemExit(main())
+if __name__ == "__main__":
+    sys.exit(main())

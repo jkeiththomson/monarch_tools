@@ -480,8 +480,7 @@ def cmd_categorize(ns: argparse.Namespace) -> int:
 
     print(f"Loaded {len(categories)} categories, {len(groups)} groups, "
           f"{len(raw_to_canonical)} raw→canonical mappings, {len(exact)} canonical rules.")
-    print(f"Type {QUIT_TOKEN!r} at any prompt to stop categorizing and optionally save.
-")
+    print(f"Type {QUIT_TOKEN!r} at any prompt to stop categorizing and optionally save.")
 
     seen_canonical: Dict[str, str] = {}  # canonical -> category
 

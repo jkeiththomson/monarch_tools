@@ -130,7 +130,7 @@ monarch-tools activity chase statements/chase/9391/2018/20180112-statements-9391
 ---
 
 ### 3.5 `categorize` — interactively build categories, groups, and rules
-
+	
 ### 3.6 `monarch`
 When an account is first seen by the `monarch` command, you are prompted for
 its **opening balance**. That value is stored in `data/config.toml` and, if
