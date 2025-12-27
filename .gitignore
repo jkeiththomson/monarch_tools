@@ -29,3 +29,4 @@ dist/
 out/
 _analysis/
 .DS_Store
+.idea/
