@@ -7,6 +7,8 @@ from typing import Callable, Dict, List, Optional
 from .commands.hello import cmd_hello
 from .commands.help import cmd_help
 from .commands.version import cmd_version
+from .commands.extract import cmd_extract
+
 
 CommandFn = Callable[[List[str]], int]
 
@@ -16,6 +18,7 @@ def registry() -> Dict[str, CommandFn]:
         "hello": cmd_hello,
         "help": cmd_help,
         "version": cmd_version,
+        "extract": cmd_extract,
     }
 
 
